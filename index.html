@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ゾンビカフェ セーブエディタ</title>
+    <title>ゾンビカフェ セーブエディタ（仮）</title>
     <!-- Favicon -->
     <link rel="icon" href="zombie_aitsu.png" type="image/png">
     <!-- Tailwind CSS CDN -->
@@ -70,12 +70,12 @@
 </head>
 <body class="bg-gray-900 flex items-center justify-center min-h-screen p-4">
     <div class="container bg-gray-800 p-8 rounded-xl shadow-lg">
-        <h1 class="text-3xl font-bold text-center text-gray-100 mb-8">ゾンビカフェ セーブエディタ</h1>
+        <h1 class="text-3xl font-bold text-center text-gray-100 mb-8">ゾンビカフェ セーブエディタ（仮）</h1>
 
         <!-- File Input Section -->
         <div class="mb-6 p-4 bg-blue-900 rounded-lg border border-blue-700">
             <label for="fileInput" class="block text-lg font-medium text-gray-100 mb-3">
-                ファイルをアップロード:
+                SaveData.datをアップロード:
             </label>
             <input type="file" id="fileInput" class="block w-full text-sm text-gray-300
                 file:mr-4 file:py-2 file:px-4
@@ -84,7 +84,7 @@
                 file:bg-blue-600 file:text-white
                 hover:file:bg-blue-700 cursor-pointer"
                 onchange="loadFile(event)">
-            <p class="text-sm text-gray-400 mt-2">編集したいバイナリファイルを選択してください。</p>
+            <p class="text-sm text-gray-400 mt-2">編集したいセーブデータを選択してください。</p>
         </div>
 
         <!-- HEX Display Area -->
@@ -105,23 +105,23 @@
                     <label for="rowOffsetInput" class="block text-sm font-medium text-gray-100 mb-1">
                         行オフセット (16進数):
                     </label>
-                    <input type="text" id="rowOffsetInput" placeholder="例: 0, 100 (行の先頭)"
+                    <input type="text" id="rowOffsetInput" placeholder="例: 00000010"
                         class="w-full p-2 border border-gray-600 rounded-lg focus:ring-green-500 focus:border-green-500
                         bg-gray-700 text-gray-100">
                 </div>
                 <div>
                     <label for="columnOffsetInput" class="block text-sm font-medium text-gray-100 mb-1">
-                        列オフセット (0-15):
+                        列オフセット (0~15):
                     </label>
-                    <input type="number" id="columnOffsetInput" placeholder="例: 0 (列の先頭), F (15)" min="0" max="15"
+                    <input type="number" id="columnOffsetInput" placeholder="例: 0 (列の先頭), 15 (右端)" min="0" max="15"
                         class="w-full p-2 border border-gray-600 rounded-lg focus:ring-green-500 focus:border-green-500
                         bg-gray-700 text-gray-100">
                 </div>
                 <div>
                     <label for="replacementHexInput" class="block text-sm font-medium text-gray-100 mb-1">
-                        新しいHEX値 (例: FF00A3):
+                        新しいHEX値:
                     </label>
-                    <input type="text" id="replacementHexInput" placeholder="例: 414243 (ABC)"
+                    <input type="text" id="replacementHexInput" placeholder="例:FFFF"
                         class="w-full p-2 border border-gray-600 rounded-lg focus:ring-green-500 focus:border-green-500
                         bg-gray-700 text-gray-100">
                 </div>
@@ -144,17 +144,17 @@
                 <button onclick="loadPresetOffset('00000010', 1)"
                     class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg
                     transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
-                    列1：毒
+                    毒
                 </button>
                 <button onclick="loadPresetOffset('00000010', 4)"
                     class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg
                     transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
-                    列4：お金
+                    お金
                 </button>
                 <button onclick="loadPresetOffset('00000010', 12)"
                     class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg
                     transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
-                    列12：経験値
+                    経験値
                 </button>
             </div>
             <p class="text-sm text-gray-400 mt-3">
@@ -168,15 +168,15 @@
             <h2 class="text-xl font-semibold text-gray-100 mb-4">現在の値表示 (オフセット 00000010)</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <p class="text-gray-100 font-medium">列1 (毒):</p>
+                    <p class="text-gray-100 font-medium">毒:</p>
                     <p id="currentValueCol1" class="text-white font-bold text-lg">---</p>
                 </div>
                 <div>
-                    <p class="text-gray-100 font-medium">列4 (お金):</p>
+                    <p class="text-gray-100 font-medium">お金:</p>
                     <p id="currentValueCol4" class="text-white font-bold text-lg">---</p>
                 </div>
                 <div>
-                    <p class="text-gray-100 font-medium">列12 (経験値):</p>
+                    <p class="text-gray-100 font-medium">経験値:</p>
                     <p id="currentValueCol12" class="text-white font-bold text-lg">---</p>
                 </div>
             </div>
@@ -187,7 +187,7 @@
 
         <!-- Number Conversion Section -->
         <div class="mb-8 p-6 bg-yellow-900 rounded-lg border border-yellow-700">
-            <h2 class="text-xl font-semibold text-gray-100 mb-4">数値変換ツール</h2>
+            <h2 class="text-xl font-semibold text-gray-100 mb-4">HEX ⇋ DEC</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                     <label for="decInput" class="block text-sm font-medium text-gray-100 mb-1">
