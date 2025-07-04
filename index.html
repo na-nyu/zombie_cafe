@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ゾンビカフェ セーブエディタ</title>
+    <!-- Favicon -->
+    <link rel="icon" href="zombie_aitsu.png" type="image/png">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Darker background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for better content flow */
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #2d3748; /* Darker container background */
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3); /* Adjust shadow for dark theme */
+            width: 100%;
+            max-width: 900px;
+        }
+        textarea {
+            font-family: monospace; /* Monospace for hex display */
+            white-space: pre; /* Preserve whitespace for formatting */
+            overflow-wrap: normal;
+            word-wrap: normal;
+            overflow-x: auto; /* Allow horizontal scrolling */
+        }
+        .message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50; /* Green for success */
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .message-box.show {
+            opacity: 1;
+        }
+        /* Custom scrollbar for better aesthetics */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: #4a5568; /* Darker scrollbar track */
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #718096; /* Darker scrollbar thumb */
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0; /* Darker scrollbar thumb hover */
+        }
+    </style>
+</head>
+<body class="bg-gray-900 flex items-center justify-center min-h-screen p-4">
+    <div class="container bg-gray-800 p-8 rounded-xl shadow-lg">
+        <h1 class="text-3xl font-bold text-center text-gray-100 mb-8">ゾンビカフェ セーブエディタ</h1>
+
+        <!-- File Input Section -->
+        <div class="mb-6 p-4 bg-blue-900 rounded-lg border border-blue-700">
+            <label for="fileInput" class="block text-lg font-medium text-gray-100 mb-3">
+                ファイルをアップロード:
+            </label>
+            <input type="file" id="fileInput" class="block w-full text-sm text-gray-300
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-full file:border-0
+                file:text-sm file:font-semibold
+                file:bg-blue-600 file:text-white
+                hover:file:bg-blue-700 cursor-pointer"
+                onchange="loadFile(event)">
+            <p class="text-sm text-gray-400 mt-2">編集したいバイナリファイルを選択してください。</p>
+        </div>
+
+        <!-- HEX Display Area -->
+        <div class="mb-6 p-4 bg-gray-700 rounded-lg border border-gray-600">
+            <label for="hexDisplay" class="block text-lg font-medium text-gray-100 mb-3">
+                HEX表示:
+            </label>
+            <textarea id="hexDisplay" rows="20" class="w-full p-3 border border-gray-600 rounded-lg
+                bg-gray-900 text-gray-100 focus:ring-blue-500 focus:border-blue-500
+                resize-y" readonly placeholder="ファイルを選択するとここにHEXデータが表示されます。"></textarea>
+        </div>
+
+        <!-- Edit Section -->
+        <div class="mb-8 p-6 bg-green-900 rounded-lg border border-green-700">
+            <h2 class="text-xl font-semibold text-gray-100 mb-4">データの編集</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label for="rowOffsetInput" class="block text-sm font-medium text-gray-100 mb-1">
+                        行オフセット (16進数):
+                    </label>
+                    <input type="text" id="rowOffsetInput" placeholder="例: 0, 100 (行の先頭)"
+                        class="w-full p-2 border border-gray-600 rounded-lg focus:ring-green-500 focus:border-green-500
+                        bg-gray-700 text-gray-100">
+                </div>
+                <div>
+                    <label for="columnOffsetInput" class="block text-sm font-medium text-gray-100 mb-1">
+                        列オフセット (0-15):
+                    </label>
+                    <input type="number" id="columnOffsetInput" placeholder="例: 0 (列の先頭), F (15)" min="0" max="15"
+                        class="w-full p-2 border border-gray-600 rounded-lg focus:ring-green-500 focus:border-green-500
+                        bg-gray-700 text-gray-100">
+                </div>
+                <div>
+                    <label for="replacementHexInput" class="block text-sm font-medium text-gray-100 mb-1">
+                        新しいHEX値 (例: FF00A3):
+                    </label>
+                    <input type="text" id="replacementHexInput" placeholder="例: 414243 (ABC)"
+                        class="w-full p-2 border border-gray-600 rounded-lg focus:ring-green-500 focus:border-green-500
+                        bg-gray-700 text-gray-100">
+                </div>
+            </div>
+            <button onclick="applyChanges()"
+                class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg
+                transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
+                変更を適用
+            </button>
+            <p class="text-sm text-gray-400 mt-3">指定された行オフセットと列オフセットから、入力されたHEX値で既存のデータを上書きします。</p>
+        </div>
+
+        <!-- Preset Edit Section -->
+        <div class="mb-8 p-6 bg-indigo-900 rounded-lg border border-indigo-700">
+            <h2 class="text-xl font-semibold text-gray-100 mb-4">プリセット編集</h2>
+            <p class="text-sm text-gray-400 mb-3">
+                以下のボタンをクリックすると、特定のオフセットが自動で入力されます。
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <button onclick="loadPresetOffset('00000010', 1)"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg
+                    transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
+                    列1：毒
+                </button>
+                <button onclick="loadPresetOffset('00000010', 4)"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg
+                    transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
+                    列4：お金
+                </button>
+                <button onclick="loadPresetOffset('00000010', 12)"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg
+                    transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
+                    列12：経験値
+                </button>
+            </div>
+            <p class="text-sm text-gray-400 mt-3">
+                これらのプリセットは、行オフセット `00000010` と指定された列オフセットを設定します。
+                その後、「新しいHEX値」を入力して「変更を適用」をクリックしてください。
+            </p>
+        </div>
+
+        <!-- Current Value Display Section -->
+        <div class="mb-8 p-6 bg-purple-900 rounded-lg border border-purple-700">
+            <h2 class="text-xl font-semibold text-gray-100 mb-4">現在の値表示 (オフセット 00000010)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <p class="text-gray-100 font-medium">列1 (毒):</p>
+                    <p id="currentValueCol1" class="text-white font-bold text-lg">---</p>
+                </div>
+                <div>
+                    <p class="text-gray-100 font-medium">列4 (お金):</p>
+                    <p id="currentValueCol4" class="text-white font-bold text-lg">---</p>
+                </div>
+                <div>
+                    <p class="text-gray-100 font-medium">列12 (経験値):</p>
+                    <p id="currentValueCol12" class="text-white font-bold text-lg">---</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-400 mt-3">
+                ファイルがロードされるか変更が適用されると、これらのオフセットの現在の値が表示されます。
+            </p>
+        </div>
+
+        <!-- Number Conversion Section -->
+        <div class="mb-8 p-6 bg-yellow-900 rounded-lg border border-yellow-700">
+            <h2 class="text-xl font-semibold text-gray-100 mb-4">数値変換ツール</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="decInput" class="block text-sm font-medium text-gray-100 mb-1">
+                        10進数:
+                    </label>
+                    <input type="number" id="decInput" placeholder="10進数を入力"
+                        class="w-full p-2 border border-gray-600 rounded-lg focus:ring-yellow-500 focus:border-yellow-500
+                        bg-gray-700 text-gray-100">
+                    <button onclick="convertDecToHex()"
+                        class="mt-2 w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg
+                        transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
+                        16進数に変換
+                    </button>
+                </div>
+                <div>
+                    <label for="hexConvertInput" class="block text-sm font-medium text-gray-100 mb-1">
+                        16進数:
+                    </label>
+                    <input type="text" id="hexConvertInput" placeholder="16進数を入力"
+                        class="w-full p-2 border border-gray-600 rounded-lg focus:ring-yellow-500 focus:border-yellow-500
+                        bg-gray-700 text-gray-100">
+                    <button onclick="convertHexToDec()"
+                        class="mt-2 w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg
+                        transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
+                        10進数に変換
+                    </button>
+                </div>
+            </div>
+            <div class="mt-4 p-3 bg-yellow-800 rounded-lg border border-yellow-600">
+                <p class="text-gray-100 font-medium">変換結果:</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div>
+                        <p class="text-gray-100 font-bold text-lg">10進数 → 16進数:</p>
+                        <p id="decToHexResult" class="text-white text-lg">---</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-100 font-bold text-lg">16進数 → 10進数:</p>
+                        <p id="hexToDecResult" class="text-white text-lg">---</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Download Section -->
+        <div class="p-4 bg-purple-900 rounded-lg border border-purple-700 text-center">
+            <button onclick="downloadFile()"
+                class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg
+                transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
+                変更済みファイルをダウンロード
+            </button>
+            <p class="text-sm text-gray-400 mt-3">変更を適用した後、このボタンでファイルをダウンロードできます。</p>
+        </div>
+
+        <!-- Footer Disclaimer -->
+        <div class="mt-8 text-center text-gray-500 text-xs">
+            <p>このサイトはGeminiによって作成されました。</p>
+        </div>
+    </div>
+
+    <!-- Message Box for notifications -->
+    <div id="messageBox" class="message-box"></div>
+
+    <script>
+        let fileBuffer = null; // Stores the ArrayBuffer of the loaded file
+        let fileName = 'modified_file.bin'; // Default download file name
+        const BYTES_PER_LINE = 16; // Constant for bytes per line in HEX display
+
+        /**
+         * Shows a temporary message box with the given text and type.
+         * @param {string} message - The message to display.
+         * @param {string} type - 'success', 'error', 'info'. Determines background color.
+         */
+        function showMessage(message, type = 'info') {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.textContent = message;
+            messageBox.className = 'message-box show'; // Reset classes and show
+
+            // Set background color based on type
+            if (type === 'success') {
+                messageBox.style.backgroundColor = '#4CAF50'; // Green
+            } else if (type === 'error') {
+                messageBox.style.backgroundColor = '#f44336'; // Red
+            } else {
+                messageBox.style.backgroundColor = '#2196F3'; // Blue (info)
+            }
+
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000); // Hide after 3 seconds
+        }
+
+        /**
+         * Handles file selection, reads the file, and displays its hex content.
+         * @param {Event} event - The file input change event.
+         */
+        function loadFile(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                showMessage('ファイルが選択されていません。', 'error');
+                return;
+            }
+
+            fileName = `modified_${file.name}`; // Set download file name
+
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                fileBuffer = e.target.result; // Store the ArrayBuffer
+                displayHex(fileBuffer);
+                displaySpecificOffsets(); // Display specific offset values after loading
+                showMessage('ファイルが正常にロードされました。', 'success');
+            };
+
+            reader.onerror = function() {
+                showMessage('ファイルの読み込み中にエラーが発生しました。', 'error');
+                console.error('File reading error:', reader.error);
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        /**
+         * Converts an ArrayBuffer to a formatted hexadecimal string for display.
+         * Displays 16 bytes per line with offset and UTF-8 representation.
+         * @param {ArrayBuffer} buffer - The ArrayBuffer to convert.
+         * @returns {string} - The formatted hexadecimal string.
+         */
+        function arrayBufferToHex(buffer) {
+            const view = new Uint8Array(buffer);
+            let formattedOutput = '';
+            const decoder = new TextDecoder('utf-8'); // Initialize TextDecoder for UTF-8
+
+            // Header for columns with separators
+            formattedOutput += 'Offset   | HEX Data                                         | UTF-8 Text\n';
+            formattedOutput += '---------|--------------------------------------------------|----------------\n';
+
+            for (let i = 0; i < view.length; i += BYTES_PER_LINE) {
+                const lineBytes = view.subarray(i, i + BYTES_PER_LINE);
+
+                // 1. Offset part
+                const offsetPart = i.toString(16).padStart(8, '0').toUpperCase();
+
+                // 2. HEX Data part
+                let hexPart = '';
+                for (let j = 0; j < lineBytes.length; j++) {
+                    hexPart += lineBytes[j].toString(16).padStart(2, '0').toUpperCase() + ' ';
+                    if (j === 7) { // Add extra space after 8 bytes for readability
+                        hexPart += ' ';
+                    }
+                }
+                // Pad hexPart to ensure consistent width for lines with fewer than BYTES_PER_LINE bytes
+                // The width calculation needs to account for the spaces and the extra space in the middle
+                hexPart = hexPart.padEnd(BYTES_PER_LINE * 3 + 1, ' '); // 2 chars + 1 space per byte, plus 1 extra space in middle
+
+                // 3. UTF-8 Text part
+                let decodedString = decoder.decode(lineBytes);
+                let printableString = '';
+                for (let char of decodedString) {
+                    const charCode = char.charCodeAt(0);
+                    // Replace non-printable characters, control characters, or the Unicode replacement character with a dot
+                    // Also replace whitespace characters that might disrupt alignment (e.g., newline, tab)
+                    if (charCode < 0x20 || charCode === 0x7F || charCode === 0xFFFD || /\s/.test(char)) {
+                        printableString += '.';
+                    } else {
+                        printableString += char;
+                    }
+                }
+                // Ensure printableString doesn't exceed a reasonable length for alignment (e.g., 16 characters)
+                printableString = printableString.substring(0, BYTES_PER_LINE);
+                printableString = printableString.padEnd(BYTES_PER_LINE, ' ');
+
+
+                // Combine parts with separators
+                formattedOutput += `${offsetPart} | ${hexPart} | ${printableString}\n`;
+            }
+            return formattedOutput.trim();
+        }
+
+        /**
+         * Displays the hex content of the ArrayBuffer in the textarea.
+         * @param {ArrayBuffer} buffer - The ArrayBuffer to display.
+         */
+        function displayHex(buffer) {
+            const hexDisplay = document.getElementById('hexDisplay');
+            if (buffer) {
+                hexDisplay.value = arrayBufferToHex(buffer);
+            } else {
+                hexDisplay.value = 'ファイルがロードされていません。';
+            }
+        }
+
+        /**
+         * Converts a hexadecimal string (e.g., "FF00A3") to a Uint8Array.
+         * @param {string} hexString - The hex string to convert.
+         * @returns {Uint8Array | null} - The resulting Uint8Array or null if invalid hex.
+         */
+        function hexStringToArrayBuffer(hexString) {
+            // Remove any whitespace
+            hexString = hexString.replace(/\s/g, '');
+
+            if (hexString.length % 2 !== 0) {
+                // Hex string must have an even number of characters
+                showMessage('HEX値は偶数桁である必要があります。', 'error');
+                return null;
+            }
+
+            const uint8 = new Uint8Array(hexString.length / 2);
+            for (let i = 0; i < hexString.length; i += 2) {
+                const byte = parseInt(hexString.substr(i, 2), 16);
+                if (isNaN(byte)) {
+                    showMessage('無効なHEX値が含まれています。', 'error');
+                    return null;
+                }
+                uint8[i / 2] = byte;
+            }
+            return uint8;
+        }
+
+        /**
+         * Applies the changes to the file buffer based on offset and replacement hex.
+         */
+        function applyChanges() {
+            if (!fileBuffer) {
+                showMessage('まずファイルをロードしてください。', 'error');
+                return;
+            }
+
+            const rowOffsetInput = document.getElementById('rowOffsetInput');
+            const columnOffsetInput = document.getElementById('columnOffsetInput');
+            const replacementHexInput = document.getElementById('replacementHexInput');
+
+            // Parse row offset as hexadecimal
+            const rowOffset = parseInt(rowOffsetInput.value, 16);
+            const columnOffset = parseInt(columnOffsetInput.value, 10); // Column is decimal (0-15)
+            const replacementHex = replacementHexInput.value.trim();
+
+            if (isNaN(rowOffset) || rowOffset < 0) {
+                showMessage('有効な行オフセット（0以上の16進数）を入力してください。', 'error');
+                return;
+            }
+            if (isNaN(columnOffset) || columnOffset < 0 || columnOffset >= BYTES_PER_LINE) {
+                showMessage(`有効な列オフセット（0から${BYTES_PER_LINE - 1}までの数値）を入力してください。`, 'error');
+                return;
+            }
+
+            if (!replacementHex) {
+                showMessage('新しいHEX値を入力してください。', 'error');
+                return;
+            }
+
+            const replacementBytes = hexStringToArrayBuffer(replacementHex);
+            if (!replacementBytes) {
+                // Error message already shown by hexStringToArrayBuffer
+                return;
+            }
+
+            // Calculate the absolute offset
+            const absoluteOffset = rowOffset + columnOffset;
+
+            const currentView = new Uint8Array(fileBuffer);
+
+            if (absoluteOffset + replacementBytes.length > currentView.length) {
+                showMessage('指定したオフセットと置き換えHEX値の長さがファイルサイズを超過しています。', 'error');
+                return;
+            }
+
+            // Create a new ArrayBuffer to avoid direct modification issues and ensure immutability
+            const newBuffer = new ArrayBuffer(fileBuffer.byteLength);
+            const newView = new Uint8Array(newBuffer);
+
+            // Copy original bytes before the absolute offset
+            newView.set(currentView.subarray(0, absoluteOffset), 0);
+            // Overwrite with replacement bytes
+            newView.set(replacementBytes, absoluteOffset);
+            // Copy original bytes after the replacement
+            newView.set(currentView.subarray(absoluteOffset + replacementBytes.length), absoluteOffset + replacementBytes.length);
+
+            fileBuffer = newBuffer; // Update the global buffer
+            displayHex(fileBuffer); // Redisplay the updated hex
+            displaySpecificOffsets(); // Update specific offset values after applying changes
+            showMessage('変更が正常に適用されました！', 'success');
+        }
+
+        /**
+         * Converts a decimal number to a hexadecimal string and displays the result.
+         */
+        function convertDecToHex() {
+            const decInput = document.getElementById('decInput');
+            const decToHexResult = document.getElementById('decToHexResult');
+            const decValue = parseInt(decInput.value, 10);
+
+            if (isNaN(decValue)) {
+                decToHexResult.textContent = '無効な10進数です。';
+                showMessage('有効な10進数を入力してください。', 'error');
+                return;
+            }
+            if (decValue < 0) {
+                decToHexResult.textContent = '負の数はサポートされていません。';
+                showMessage('0以上の10進数を入力してください。', 'error');
+                return;
+            }
+
+            decToHexResult.textContent = `${decValue.toString(16).toUpperCase()}`;
+            showMessage('10進数から16進数への変換が完了しました。', 'success');
+        }
+
+        /**
+         * Converts a hexadecimal string to a decimal number and displays the result.
+         */
+        function convertHexToDec() {
+            const hexConvertInput = document.getElementById('hexConvertInput');
+            const hexToDecResult = document.getElementById('hexToDecResult');
+            const hexString = hexConvertInput.value.trim();
+
+            if (!hexString) {
+                hexToDecResult.textContent = '16進数を入力してください。';
+                showMessage('16進数を入力してください。', 'error');
+                return;
+            }
+
+            // Use BigInt for potentially large hex numbers to avoid precision issues with Number.MAX_SAFE_INTEGER
+            try {
+                const decValue = BigInt('0x' + hexString);
+                hexToDecResult.textContent = `${decValue.toString()}`;
+                showMessage('16進数から10進数への変換が完了しました。', 'success');
+            } catch (e) {
+                hexToDecResult.textContent = '無効な16進数です。';
+                showMessage('有効な16進数を入力してください。', 'error');
+                console.error('Hex to Dec conversion error:', e);
+            }
+        }
+
+        /**
+         * Loads a preset offset into the input fields.
+         * @param {string} rowHexOffset - The hexadecimal row offset.
+         * @param {number} columnDecOffset - The decimal column offset (0-15).
+         */
+        function loadPresetOffset(rowHexOffset, columnDecOffset) {
+            document.getElementById('rowOffsetInput').value = rowHexOffset;
+            document.getElementById('columnOffsetInput').value = columnDecOffset;
+            showMessage(`プリセットオフセットがロードされました: 行 ${rowHexOffset}, 列 ${columnDecOffset}`, 'info');
+        }
+
+        /**
+         * Helper function to convert a hexadecimal string to a decimal number.
+         * @param {string} hexString - The hexadecimal string.
+         * @returns {number | string} - The decimal number or 'N/A' if invalid.
+         */
+        function hexToDecimal(hexString) {
+            if (hexString === 'N/A') return 'N/A';
+            try {
+                // Use BigInt for conversion to handle larger numbers, then convert to string for display
+                return BigInt('0x' + hexString).toString();
+            } catch (e) {
+                return 'N/A';
+            }
+        }
+
+        /**
+         * Displays the current byte values at specific predefined offsets.
+         */
+        function displaySpecificOffsets() {
+            const baseRowOffset = parseInt('00000010', 16); // Base row offset for presets
+            const col1Offset = baseRowOffset + 1;
+            const col4Offset = baseRowOffset + 4;
+            const col5Offset = baseRowOffset + 5; // Added for money
+            const col12Offset = baseRowOffset + 12;
+            const col13Offset = baseRowOffset + 13; // Added for experience
+
+            const currentValueCol1 = document.getElementById('currentValueCol1');
+            const currentValueCol4 = document.getElementById('currentValueCol4');
+            const currentValueCol12 = document.getElementById('currentValueCol12');
+
+            if (!fileBuffer) {
+                currentValueCol1.textContent = '---';
+                currentValueCol4.textContent = '---';
+                currentValueCol12.textContent = '---';
+                return;
+            }
+
+            const view = new Uint8Array(fileBuffer);
+
+            // Function to get byte at specific offset (returns HEX string)
+            const getByteHex = (offset) => {
+                if (offset < view.length) {
+                    return view[offset].toString(16).padStart(2, '0').toUpperCase();
+                }
+                return 'N/A'; // Not Available if offset is out of bounds
+            };
+
+            // Function to get two consecutive bytes at specific offset (returns combined HEX string)
+            const getTwoByteHex = (offset) => {
+                if (offset + 1 < view.length) {
+                    const byte1 = view[offset].toString(16).padStart(2, '0').toUpperCase();
+                    const byte2 = view[offset + 1].toString(16).padStart(2, '0').toUpperCase();
+                    return byte1 + byte2;
+                } else if (offset < view.length) {
+                    return view[offset].toString(16).padStart(2, '0').toUpperCase() + '??'; // Indicate partial data
+                }
+                return 'N/A'; // Not Available if offset is out of bounds
+            };
+
+            // Get HEX values
+            const hexValCol1 = getByteHex(col1Offset);
+            const hexValCol4 = getTwoByteHex(col4Offset);
+            const hexValCol12 = getTwoByteHex(col12Offset);
+
+            // Convert HEX to DEC
+            const decValCol1 = hexToDecimal(hexValCol1);
+            const decValCol4 = hexToDecimal(hexValCol4);
+            const decValCol12 = hexToDecimal(hexValCol12);
+
+            // Update display
+            currentValueCol1.textContent = `HEX: ${hexValCol1} | DEC: ${decValCol1}`;
+            currentValueCol4.textContent = `HEX: ${hexValCol4} | DEC: ${decValCol4}`;
+            currentValueCol12.textContent = `HEX: ${hexValCol12} | DEC: ${decValCol12}`;
+        }
+
+        /**
+         * Downloads the modified file buffer as a binary file.
+         */
+        function downloadFile() {
+            if (!fileBuffer) {
+                showMessage('ダウンロードするファイルがありません。まず変更を適用してください。', 'error');
+                return;
+            }
+
+            const blob = new Blob([fileBuffer], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName; // Use the stored file name
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url); // Clean up the URL object
+            showMessage('ファイルがダウンロードされました！', 'success');
+        }
+    </script>
+</body>
+</html>
