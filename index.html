@@ -241,6 +241,30 @@
             <p class="text-sm text-gray-400 mt-3">変更を適用した後、このボタンでファイルをダウンロードできます。</p>
         </div>
 
+        <!-- SaveData.dat Extraction Instructions -->
+        <div class="mt-8 p-6 bg-gray-700 rounded-lg border border-gray-600">
+            <h2 class="text-xl font-semibold text-gray-100 mb-4">SaveData.datの取り出し方</h2>
+            <p class="text-gray-300 mb-2">
+                Androidスマートフォンと、ADBをインストールしたWindows PCを接続します。
+            </p>
+            <ol class="list-decimal list-inside text-gray-300 space-y-2">
+                <li>コマンドプロンプト（またはPowerShell）で以下のコマンドを実行します:</li>
+                <code class="block bg-gray-900 text-green-400 p-2 rounded-md overflow-x-auto">
+                    adb backup -f zombie.ab com.capcom.zombiecafeandroidJP
+                </code>
+                <li class="mt-2">出てきた `zombie.ab` ファイルに対し、以下のコマンドを実行します。<br>
+                    ※ `abp.jar` は、ADBバックアップファイルを展開するためのツールです。別途入手してください。
+                </li>
+                <code class="block bg-gray-900 text-green-400 p-2 rounded-md overflow-x-auto">
+                    java -jar abp.jar unpack zombie.ab zz.tar
+                </code>
+                <li class="mt-2">得られた `zz.tar` ファイルを解凍し、`apps/f/SaveData.dat` を取り出します。</li>
+            </ol>
+            <p class="text-sm text-gray-400 mt-4">
+                検証スマホ：Galaxy S20(Android 13)
+            </p>
+        </div>
+        
         <!-- Footer Disclaimer -->
         <div class="mt-8 text-center text-gray-500 text-xs">
             <p>このサイトはGeminiによって作成されました。</p>
